@@ -22,7 +22,6 @@ import javax.inject.Inject;
 
 public class RepoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private List<RepoDetail> source;
-    private AdapterInteractor interactor;
     private ImageManager mImageManager;
 
     @Inject
@@ -31,9 +30,6 @@ public class RepoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.mImageManager = manager;
     }
 
-    public void setAdapterInteractor(AdapterInteractor interactor){
-        this.interactor = interactor;
-    }
 
 
     @Override
@@ -52,12 +48,11 @@ public class RepoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return this.source.size();
     }
 
-    private class ItemHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+    private class ItemHolder extends RecyclerView.ViewHolder {
 
         private TextView forkCount;
         private TextView desc;
         private TextView ownerName;
-        private RepoDetail detail;
         private ImageView avatar;
         public ItemHolder(View itemView) {
             super(itemView);
@@ -65,7 +60,6 @@ public class RepoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             forkCount = itemView.findViewById(R.id.repo_fork_count);
             desc = (TextView)itemView.findViewById(R.id.repo_desc);
             ownerName = (TextView)itemView.findViewById(R.id.repo_owner);
-            itemView.setOnClickListener(this);
         }
 
         public void bindView(RepoDetail detail){
@@ -75,19 +69,13 @@ public class RepoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 String forkLabel = forkCount.getContext().getResources().
                         getString(R.string.forked_count_label,detail.getForkCount());
                 mImageManager.requestImage(avatar,detail.getOwnerAvatar());
-                this.detail = detail;
                 forkCount.setText(forkLabel);
                 desc.setText(detail.getDescription());
                 ownerName.setText(detail.getOwnerLogin());
             }
         }
 
-        @Override
-        public void onClick(View view) {
-            if(interactor != null){
-                interactor.showDetail(detail);
-            }
-        }
+
     }
 
     public void addData(List<RepoDetail> data){

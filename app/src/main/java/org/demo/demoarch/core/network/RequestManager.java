@@ -2,24 +2,17 @@ package org.demo.demoarch.core.network;
 
 import org.demo.demoarch.core.cache.CacheManager;
 import org.demo.demoarch.core.cache.RepoDetail;
-import org.demo.demoarch.core.cache.SubscriberDetail;
 import org.demo.demoarch.feature.RepoRequest;
 import org.demo.demoarch.feature.convertor.RepoListConvertor;
-import org.demo.demoarch.repodetail.RepoDetailConvertor;
 import org.demo.demoarch.response.GitHubRepo;
-import org.demo.demoarch.response.OwnerResponse;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import io.reactivex.Observable;
-import io.reactivex.schedulers.Schedulers;
-import timber.log.Timber;
 
 /**
  * Created by pagga9 on 1/27/2018.
@@ -40,7 +33,6 @@ public class RequestManager {
     public Observable<RequestModel<List<RepoDetail>>> requestData(final int page , int count, @Nonnull final RepoListConvertor convertor){
 
         final RepoRequest repoRequest = new RepoRequest(page,count);
-        if(repoRequest != null){
 
             RequestModel<List<RepoDetail>> progress = RequestModel.isProgress();
            return getRepoList(repoRequest,convertor).map(repoDetails -> RequestModel.isSuccess(repoDetails))
@@ -53,11 +45,8 @@ public class RequestManager {
                    return getDataFromDBInCaseOfError(repoRequest);
                else
                    return Observable.just(model);
-           }).startWith(progress).subscribeOn(Schedulers.io());
-        }
+           }).startWith(progress);
 
-        RequestModel<List<RepoDetail>> requestModel = RequestModel.error("No request param");
-        return  Observable.just(requestModel);
     }
 
 
@@ -92,39 +81,7 @@ public class RequestManager {
                     return detail;}).toList().toObservable();
     }
 
-    public Observable<RequestModel<List<SubscriberDetail>>> getSubscriberForRepos(long id, RepoDetailConvertor convertor){
 
-
-        return Observable.fromCallable(() -> cacheManager.getRepoDetail(id)).
-                flatMap( detail ->service.getSubscriberList(detail.getFullName())).
-                flatMap(listResponse -> {
-                    if(listResponse.isSuccessful())
-                        return saveSubscriberReponseInDB(listResponse.body(),id,convertor);
-                    else
-                        return Observable.just(RequestModel.isSuccess(cacheManager.getSubscriberForRepo(id)));
-                }).onErrorReturn(throwable -> {
-
-                    if(throwable instanceof IOException)
-                        return RequestModel.isSuccess(cacheManager.getSubscriberForRepo(id));
-                    else{
-                        return RequestModel.error("Unable to get the data " +
-                                "due to "+throwable.getLocalizedMessage());
-                    }
-                }).startWith(RequestModel.isProgress()).subscribeOn(Schedulers.io());
-
-    }
-
-    private Observable<RequestModel<List<SubscriberDetail>>> saveSubscriberReponseInDB(List<OwnerResponse> list , long id,
-                                                                                        RepoDetailConvertor convertor){
-
-        return Observable.fromIterable(list)
-                .map( detail -> {
-                    SubscriberDetail subscriberDetail = convertor.convert(detail,id);
-                    cacheManager.cacheSubscriberForRepo(subscriberDetail);
-                    return subscriberDetail;
-                }).toList().toObservable().
-                        map(details -> RequestModel.isSuccess(details) );
-    }
 
 
 }

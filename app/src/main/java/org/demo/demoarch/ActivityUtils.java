@@ -39,13 +39,6 @@ public class ActivityUtils {
         transaction.commit();
     }
 
-    public static Intent getDetailActivityIntent(RepoDetail detail, Context context){
 
-        Intent intent = new Intent(context,DetailActivity.class);
-        intent.putExtra(DetailActivity.EXTRA_REPO_ID,detail.getId());
-        intent.putExtra(DetailActivity.EXTRA_REPO_NAME,detail.getTitle());
-
-        return intent;
-    }
 
 }

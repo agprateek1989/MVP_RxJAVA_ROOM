@@ -4,20 +4,17 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import org.demo.demoarch.ActivityUtils;
 import org.demo.demoarch.R;
 import org.demo.demoarch.common.ui.BaseFragment;
 import org.demo.demoarch.core.cache.RepoDetail;
-import org.demo.demoarch.core.network.RequestModel;
 import org.demo.demoarch.di.scopes.ActivityScoped;
-import org.demo.demoarch.feature.AdapterInteractor;
+import org.demo.demoarch.feature.FeatureInteractor;
 import org.demo.demoarch.feature.RepoAdapter;
 import org.demo.demoarch.feature.presentor.FeaturePresentor;
 
@@ -25,14 +22,11 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import io.reactivex.Observable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-
 /**
  * Created by pagga9 on 1/27/2018.
  */
 @ActivityScoped
-public class FeatureFragment extends BaseFragment implements AdapterInteractor {
+public class FeatureFragment extends BaseFragment implements FeatureInteractor {
 
     @Inject
     FeaturePresentor presentor;
@@ -48,11 +42,6 @@ public class FeatureFragment extends BaseFragment implements AdapterInteractor {
         // Requires empty public constructor
     }
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-    }
 
     @Nullable
     @Override
@@ -67,23 +56,9 @@ public class FeatureFragment extends BaseFragment implements AdapterInteractor {
         recyclerView = (RecyclerView)view.findViewById(R.id.repo_list);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.addOnScrollListener(listener);
-        adapter.setAdapterInteractor(this);
         recyclerView.setAdapter(adapter);
-        if(presentor != null)
-        presentor.loadList().observeOn(AndroidSchedulers.mainThread()).subscribe(model ->  {
-                if(model.isProgres()){
-                    progressBar.setVisibility(View.VISIBLE);
-                    recyclerView.setVisibility(View.GONE);
-                    return;
-                }else if(model.isSuccess() && model.getData() != null){
-                    adapter.addData(model.getData());
-                    recyclerView.setVisibility(View.VISIBLE);
-                }else if(!TextUtils.isEmpty(model.getErrorMessage())){
-                    Toast.makeText(getContext(),model.getErrorMessage(),Toast.LENGTH_SHORT).show();
-                }
-
-                progressBar.setVisibility(View.GONE);
-            });
+        presentor.attach(this);
+        presentor.loadList();
     }
 
     private RecyclerView.OnScrollListener listener = new RecyclerView.OnScrollListener() {
@@ -102,32 +77,48 @@ public class FeatureFragment extends BaseFragment implements AdapterInteractor {
             int firstVisibleItemPosition = ((LinearLayoutManager)recyclerView.getLayoutManager()).
                     findFirstVisibleItemPosition();
             if(!isLoading){
-                Observable<RequestModel<List<RepoDetail>>> scrollObserver = presentor.scrollPosition(visibleItemCount,totalItemCount,firstVisibleItemPosition)
-                  ;
-                if(scrollObserver != null){
-                   scrollObserver.observeOn(AndroidSchedulers.mainThread()).subscribe(model ->  {
-
-                           if(model.isProgres()){
-                               isLoading = true;
-                           }else if(model.isSuccess() && model.getData() != null){
-                               adapter.addData(model.getData());
-                               isLoading = false;
-                           }else if(!TextUtils.isEmpty(model.getErrorMessage())){
-                               isLoading = false;
-                           }
-
-                       });
-                }
-
+                presentor.scrollPosition(visibleItemCount,totalItemCount,firstVisibleItemPosition);
             }
         }
     };
 
 
+
+
     @Override
-    public void showDetail(RepoDetail repoDetail) {
-
-        getActivity().startActivity(ActivityUtils.getDetailActivityIntent(repoDetail,getContext()));
-
+    public void showLoading() {
+        progressBar.setVisibility(View.VISIBLE);
     }
+
+    @Override
+    public void hideLoading() {
+        progressBar.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void showData(List<RepoDetail> detail) {
+        adapter.addData(detail);
+    }
+
+    @Override
+    public void showList() {
+        recyclerView.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void hideList() {
+        recyclerView.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void showError(String message) {
+        Toast.makeText(getContext(),message,Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void loadingCompleted() {
+        isLoading = false;
+    }
+
+
 }

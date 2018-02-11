@@ -2,6 +2,7 @@ package org.demo.demoarch.feature.presentor;
 
 import org.demo.demoarch.core.cache.RepoDetail;
 import org.demo.demoarch.core.network.RequestModel;
+import org.demo.demoarch.feature.FeatureInteractor;
 
 import java.util.List;
 
@@ -11,6 +12,7 @@ import java.util.List;
 
 public interface FeaturePresentor {
 
-    io.reactivex.Observable<RequestModel<List<RepoDetail>>> loadList();
-    io.reactivex.Observable<RequestModel<List<RepoDetail>>> scrollPosition(int visibleCount, int total, int firstPosition);
+    void loadList();
+    void scrollPosition(int visibleCount, int total, int firstPosition);
+    void attach(FeatureInteractor interactor);
 }
